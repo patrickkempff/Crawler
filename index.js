@@ -10,7 +10,7 @@ crawler.crawl().then((report) => {
     console.log('Writing report. Please wait...');
 
     // Write the report to disk.
-    fs.writeFile('report/report.json', JSON.stringify(report, null, 4), function(){
+    fs.writeFile('report.json', JSON.stringify(report, null, 4), function(){
         console.log('Done!');
     });
 });
