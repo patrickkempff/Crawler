@@ -2,9 +2,9 @@
   "name": "Crawler",
   "version": "0.1.1b",
   "description": "",
-  "main": "index.js",
+  "main": "crawl.js",
   "scripts": {
-    "start": "node --harmony-async-await --harmony index.js",
+    "start": "node --harmony-async-await --harmony crawl.js https://github.com/patrickkempff --max-depth=1 --screenshots -v --resources --screenshots --viewport-width=1600 --viewport-height=1600",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -12,7 +12,10 @@
   "dependencies": {
     "assign-deep": "^0.4.5",
     "cheerio": "^0.22.0",
-    "phantom": "^3.2.0"
+    "commander": "^2.9.0",
+    "mkdirp": "^0.5.1",
+    "phantom": "^3.2.0",
+    "sanitize-filename": "^1.6.1"
   },
   "engines": {
     "node": ">=7.2.0"

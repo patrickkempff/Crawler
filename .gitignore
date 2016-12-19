@@ -1,2 +1,4 @@
+.DS_Store
 node_modules
 report.json
+reports

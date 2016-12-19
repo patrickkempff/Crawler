@@ -3,16 +3,20 @@ const $ = require('cheerio');
 const uri = require('url');
 const assign = require('assign-deep');
 const crypto = require('crypto');
+const sanitize = require('sanitize-filename');
+const path = require('path');
 
 class Crawler {
-    constructor(url, depth = Crawler.InfiniteDepth, fetch = true, restrict = true, debug = true) {
+    constructor(url, depth = Crawler.InfiniteDepth, fetch = true, restrict = true, loglevel = 0, screenshot = false, width = 1600, height = 600) {
         
         // Will hold the crawled report.
         this.report = {};
         this.entryUrl = url;
         this.depth = depth;
-        this.debug = true;
+        this.loglevel = loglevel;
         this.fetch = fetch;
+        this.screenshot = screenshot;
+        this.viewport = {width: width, height: height};
 
         // Set this to false if you want to crawl
         // all anchors. Set to true if only the anchors
@@ -66,13 +70,15 @@ class Crawler {
         out.resources = {};
         out.url = url;
         out.shouldFetchResources = this.fetch;
-        out.debug = this.debug;
+        out.loglevel = this.loglevel;
+
+        await this._page.property("viewportSize", {width: this.viewport.width, height: this.viewport.height});
 
         // Listen for the onResourceRequested event. 
         await this._page.property("onResourceRequested", function(data, request, _out) {
 
             // Log this shit.
-            if ( _out.debug ) {
+            if ( _out.loglevel > 1 ) {
                 console.log(" Resource found: " + data.url);
             }   
             
@@ -96,12 +102,12 @@ class Crawler {
         const types = this._instance.createOutObject();
         types.resources = {};
         types.url = url;
-        types.debug = this.debug;       
+        types.loglevel = this.loglevel;       
 
         // Listen for the onResourceRequested event. 
         await this._page.property('onResourceReceived', function(response, _out) {
             // Log this shit.
-            if ( _out.debug ) {
+            if ( _out.loglevel > 1 ) {
                 console.log(" Resource recieved: " + response.url);
             }   
             
@@ -121,15 +127,26 @@ class Crawler {
 
 
         // Make sure we disable the cache.
-        this._page.setting('clearMemoryCaches', true);
+        this._page.setting('clearMemoryCaches', true);      
 
         // Load the page and wait for the status (fail/success).
         const status = await this._page.open(url);
 
-        this.report[url].resources = assign({}, 
-            await out.property('resources'), 
-            await types.property('resources')
-        );
+        if ( this.fetch ) {
+            this.report[url].resources = assign({}, 
+                await out.property('resources'), 
+                await types.property('resources')
+            );
+        }
+
+        // Only take screenshots if enabled.
+        if (this.screenshot) {
+            // sleep for 2 seconds
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const renderpath = path.join(this.screenshot, 'screenshots', 'page_' + sanitize(url) + '.jpg');
+            await this._page.render(renderpath, {format: 'jpg', quality: '100'});
+            this.report[url].screenshot = 'screenshots/page_' + sanitize(url) + '.jpg';
+        }        
 
         // Find all crawable urls in the page.
         const urls = await this._findCrawableURLsInPage(this._page);
@@ -142,7 +159,7 @@ class Crawler {
     }
 
     _log(message) {
-        if (this.debug === true) {
+        if (this.loglevel) {
             console.info(message);
         }
     }
